@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rozliczenie delegacji zagranicznej</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff;
+  --bg2: #f7f7f5;
+  --bg3: #f0efeb;
+  --border: rgba(0,0,0,0.12);
+  --border2: rgba(0,0,0,0.22);
+  --text: #1a1a1a;
+  --text2: #666;
+  --text3: #999;
+  --green: #1D9E75;
+  --green-dark: #0F6E56;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; color: var(--text); background: var(--bg3); min-height: 100vh; }
+.app { max-width: 820px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+.header { margin-bottom: 2rem; }
+.header h1 { font-size: 22px; font-weight: 600; color: var(--text); }
+.header p { font-size: 12px; color: var(--text2); margin-top: 5px; }
+.steps-wrap { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+.progress { display: flex; gap: 4px; margin-bottom: 1rem; }
+.prog-seg { height: 3px; flex: 1; border-radius: 2px; background: var(--bg3); transition: background 0.3s; }
+.prog-seg.done { background: var(--green); }
+.prog-seg.active { background: var(--text); }
+.steps { display: flex; gap: 6px; flex-wrap: wrap; }
+.step-btn { padding: 5px 13px; font-size: 12px; border: 0.5px solid var(--border2); border-radius: 20px; background: transparent; color: var(--text2); cursor: pointer; transition: all 0.15s; font-family: inherit; }
+.step-btn.active { background: var(--text); color: #fff; border-color: var(--text); font-weight: 500; }
+.step-btn.done { border-color: var(--green); color: var(--green); }
+.panel { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.5rem; display: none; }
+.panel.active { display: block; }
+.panel-title { font-size: 15px; font-weight: 600; margin-bottom: 1.25rem; color: var(--text); }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field.full { grid-column: 1 / -1; }
+label.lbl { font-size: 11px; color: var(--text2); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+input[type=text], input[type=number], input[type=date], input[type=datetime-local], select, textarea {
+  border: 0.5px solid var(--border2); border-radius: var(--radius-sm);
+  padding: 8px 10px; font-size: 14px; font-family: inherit;
+  background: var(--bg); color: var(--text); width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: #888; box-shadow: 0 0 0 3px rgba(0,0,0,0.06); }
+textarea { resize: vertical; min-height: 64px; }
+.info-box { font-size: 12px; color: var(--text2); background: var(--bg2); border-radius: var(--radius-sm); padding: 8px 12px; margin-top: 6px; border-left: 2px solid var(--border2); }
+.card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 10px; }
+.card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.card-head span { font-size: 13px; font-weight: 600; }
+.remove-btn { width: 26px; height: 26px; border-radius: 50%; border: 0.5px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
+.remove-btn:hover { border-color: #e24b4a; color: #e24b4a; }
+.add-btn { display: flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; border: 1px dashed var(--border2); border-radius: var(--radius-sm); background: transparent; color: var(--text2); cursor: pointer; transition: all 0.15s; font-family: inherit; margin-top: 6px; }
+.add-btn:hover { border-color: #888; color: var(--text); }
+.meals-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-top: 10px; }
+.meal-item { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.meal-item input[type=checkbox] { width: auto; cursor: pointer; }
+.meal-item label { text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 400; cursor: pointer; color: var(--text); }
+.meal-item input[type=number] { width: 52px; }
+.sum-wrap { background: var(--bg2); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+.sum-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; border-bottom: 0.5px solid var(--border); }
+.sum-row:last-child { border-bottom: none; font-weight: 600; font-size: 15px; padding-top: 10px; margin-top: 4px; }
+.sum-row .val { font-weight: 500; }
+.nav { display: flex; justify-content: space-between; margin-top: 1.5rem; }
+.btn-prev { padding: 9px 20px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: transparent; color: var(--text2); font-size: 14px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.btn-prev:hover { background: var(--bg2); }
+.btn-next { padding: 9px 22px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--text); color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.btn-next:hover { opacity: 0.85; }
+.btn-gen { padding: 10px 26px; background: var(--green); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+.btn-gen:hover { background: var(--green-dark); }
+.note { font-size: 11px; color: var(--text3); margin-top: 8px; }
+@media (max-width: 560px) {
+  .grid2, .grid3 { grid-template-columns: 1fr; }
+  .meals-grid { grid-template-columns: 1fr 1fr; }
+  .field.full { grid-column: 1; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Rozliczenie delegacji zagranicznej</h1>
+    <p>Druk zgodny z rozporządzeniem MPiPS z dnia 29 stycznia 2013 r. (Dz.U. 2013 poz. 167)</p>
+  </div>
+
+  <div class="steps-wrap">
+    <div class="progress" id="progress"></div>
+    <div class="steps" id="steps">
+      <button class="step-btn active" onclick="goto(0)">1. Dane</button>
+      <button class="step-btn" onclick="goto(1)">2. Podróż</button>
+      <button class="step-btn" onclick="goto(2)">3. Diety</button>
+      <button class="step-btn" onclick="goto(3)">4. Noclegi</button>
+      <button class="step-btn" onclick="goto(4)">5. Transport</button>
+      <button class="step-btn" onclick="goto(5)">6. Inne koszty</button>
+      <button class="step-btn" onclick="goto(6)">7. Podsumowanie</button>
+    </div>
+  </div>
+
+  <!-- KROK 0 -->
+  <div class="panel active" id="s0">
+    <div class="panel-title">Dane pracownika i delegacji</div>
+    <div class="grid2">
+      <div class="field"><label class="lbl">Imię i nazwisko</label><input type="text" id="imie" placeholder="Jan Kowalski"></div>
+      <div class="field"><label class="lbl">Stanowisko</label><input type="text" id="stanowisko" placeholder="Specjalista ds. handlu"></div>
+      <div class="field"><label class="lbl">Nr pracownika / ID</label><input type="text" id="nrprac" placeholder="EMP-0042"></div>
+      <div class="field"><label class="lbl">Jednostka organizacyjna</label><input type="text" id="jednostka" placeholder="Dział Sprzedaży"></div>
+      <div class="field full"><label class="lbl">Cel delegacji</label><input type="text" id="cel" placeholder="Konferencja / spotkanie z kontrahentem / szkolenie…"></div>
+      <div class="field"><label class="lbl">Kraj i miasto delegacji</label><input type="text" id="miejsce" placeholder="Niemcy, Berlin"></div>
+      <div class="field"><label class="lbl">Główna waluta wyjazdu (ISO)</label>
+        <select id="waluta_glowna">
+          <option>EUR</option><option>USD</option><option>GBP</option><option>CHF</option>
+          <option>NOK</option><option>SEK</option><option>DKK</option><option>CZK</option><option>HUF</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- KROK 1 -->
+  <div class="panel" id="s1">
+    <div class="panel-title">Termin i środek transportu</div>
+    <div class="grid2">
+      <div class="field"><label class="lbl">Data i godzina wyjazdu</label><input type="datetime-local" id="wyjazd"></div>
+      <div class="field"><label class="lbl">Data i godzina powrotu</label><input type="datetime-local" id="powrot"></div>
+      <div class="field"><label class="lbl">Środek transportu</label>
+        <select id="transport_glowny">
+          <option>Samolot</option><option>Pociąg</option>
+          <option>Samochód służbowy</option><option>Samochód prywatny</option>
+          <option>Autokar</option><option>Statek / prom</option>
+        </select>
+      </div>
+      <div class="field"><label class="lbl">Nr polecenia wyjazdu</label><input type="text" id="nrpolecenia" placeholder="PW/2025/001"></div>
+    </div>
+    <div class="info-box" id="czas_info" style="margin-top:14px;">Uzupełnij daty wyjazdu i powrotu, aby obliczyć czas trwania.</div>
+  </div>
+
+  <!-- KROK 2 -->
+  <div class="panel" id="s2">
+    <div class="panel-title">Diety</div>
+    <div class="info-box" id="dieta_info" style="margin-bottom:12px;">Reguła: &lt;8h – brak diety; 8–12h – 50% stawki; &gt;12h – pełna stawka za niepełną dobę.</div>
+    <div class="grid2">
+      <div class="field"><label class="lbl">Stawka diety dobowej</label><input type="number" id="stawka_diety" placeholder="np. 49" min="0" step="0.01" oninput="calcDieta()"></div>
+      <div class="field"><label class="lbl">Waluta stawki</label>
+        <select id="waluta_diety" onchange="calcDieta()">
+          <option>EUR</option><option>USD</option><option>GBP</option><option>CHF</option>
+        </select>
+      </div>
+      <div class="field"><label class="lbl">Pełnych dób (auto)</label><input type="number" id="liczba_dob" min="0" step="1" readonly style="background:var(--bg2)"></div>
+      <div class="field"><label class="lbl">Pozostałe godziny (auto)</label><input type="number" id="pozostale_godz" min="0" max="23" step="1" readonly style="background:var(--bg2)"></div>
+    </div>
+    <div style="margin-top:16px;">
+      <label class="lbl">Posiłki zapewnione – odliczane od diety (śniadanie 15%, obiad 30%, kolacja 15%)</label>
+      <div class="meals-grid">
+        <div class="meal-item"><input type="checkbox" id="m_sn" onchange="calcDieta()"> <label for="m_sn">Śniadania</label> <input type="number" id="m_sn_ile" value="0" min="0" oninput="calcDieta()"></div>
+        <div class="meal-item"><input type="checkbox" id="m_ob" onchange="calcDieta()"> <label for="m_ob">Obiady</label> <input type="number" id="m_ob_ile" value="0" min="0" oninput="calcDieta()"></div>
+        <div class="meal-item"><input type="checkbox" id="m_ko" onchange="calcDieta()"> <label for="m_ko">Kolacje</label> <input type="number" id="m_ko_ile" value="0" min="0" oninput="calcDieta()"></div>
+      </div>
+    </div>
+    <div class="info-box" id="dieta_total" style="margin-top:14px;font-weight:500;"></div>
+  </div>
+
+  <!-- KROK 3 -->
+  <div class="panel" id="s3">
+    <div class="panel-title">Noclegi</div>
+    <div id="noclegi_list"></div>
+    <button class="add-btn" onclick="addNocleg()">+ Dodaj nocleg</button>
+  </div>
+
+  <!-- KROK 4 -->
+  <div class="panel" id="s4">
+    <div class="panel-title">Koszty transportu</div>
+    <div id="transport_list"></div>
+    <button class="add-btn" onclick="addTransport()">+ Dodaj pozycję transportu</button>
+    <div style="margin-top:16px;" id="km_box">
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Ryczałt za jazdy samochodem prywatnym</div>
+        <div class="grid2">
+          <div class="field"><label class="lbl">Liczba km</label><input type="number" id="km_ilosc" min="0" value="0" oninput="calcKm()"></div>
+          <div class="field"><label class="lbl">Stawka za km (PLN)</label><input type="number" id="km_stawka" value="0.8963" step="0.0001" oninput="calcKm()"></div>
+        </div>
+        <div class="info-box" id="km_wynik" style="margin-top:8px;">Ryczałt: 0.00 PLN</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KROK 5 -->
+  <div class="panel" id="s5">
+    <div class="panel-title">Inne wydatki</div>
+    <div id="inne_list"></div>
+    <button class="add-btn" onclick="addInny()">+ Dodaj wydatek</button>
+  </div>
+
+  <!-- KROK 6 -->
+  <div class="panel" id="s6">
+    <div class="panel-title">Podsumowanie rozliczenia</div>
+    <div id="summary_content"></div>
+    <button class="btn-gen" onclick="generatePrint()">Generuj druk do wydruku →</button>
+    <p class="note" style="margin-top:10px;">Otworzy się nowe okno z gotowym drukiem – użyj Ctrl+P (lub Cmd+P) aby wydrukować lub zapisać jako PDF.</p>
+  </div>
+
+  <div class="nav">
+    <button class="btn-prev" id="btn_prev" onclick="prevStep()" style="visibility:hidden">← Wstecz</button>
+    <button class="btn-next" id="btn_next" onclick="nextStep()">Dalej →</button>
+  </div>
+</div>
+
+<script>
+let current = 0;
+const total = 7;
+
+function buildProgress() {
+  const p = document.getElementById('progress');
+  p.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const s = document.createElement('div');
+    s.className = 'prog-seg' + (i < current ? ' done' : i === current ? ' active' : '');
+    p.appendChild(s);
+  }
+}
+
+function goto(n) {
+  document.getElementById('s' + current).classList.remove('active');
+  document.querySelectorAll('.step-btn')[current].classList.remove('active');
+  current = n;
+  document.getElementById('s' + current).classList.add('active');
+  document.querySelectorAll('.step-btn')[current].classList.add('active');
+  document.getElementById('btn_prev').style.visibility = current === 0 ? 'hidden' : 'visible';
+  document.getElementById('btn_next').style.display = current === total - 1 ? 'none' : '';
+  buildProgress();
+  if (current === 2) { updateDobCalc(); calcDieta(); }
+  if (current === 6) buildSummary();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextStep() { if (current < total - 1) goto(current + 1); }
+function prevStep() { if (current > 0) goto(current - 1); }
+
+document.getElementById('wyjazd').addEventListener('change', () => { updateDobCalc(); calcDieta(); });
+document.getElementById('powrot').addEventListener('change', () => { updateDobCalc(); calcDieta(); });
+
+function updateDobCalc() {
+  const w = document.getElementById('wyjazd').value;
+  const p = document.getElementById('powrot').value;
+  if (!w || !p) return;
+  const d1 = new Date(w), d2 = new Date(p);
+  const diff = d2 - d1;
+  if (diff <= 0) { document.getElementById('czas_info').textContent = 'Data powrotu musi być późniejsza niż wyjazdu.'; return; }
+  const totalH = Math.floor(diff / 3600000);
+  const doby = Math.floor(totalH / 24);
+  const reszta = totalH % 24;
+  document.getElementById('liczba_dob').value = doby;
+  document.getElementById('pozostale_godz').value = reszta;
+  document.getElementById('czas_info').textContent = 'Czas trwania: ' + doby + ' dób i ' + reszta + ' godz.';
+}
+
+function calcDieta() {
+  const stawka = parseFloat(document.getElementById('stawka_diety').value) || 0;
+  const doby = parseInt(document.getElementById('liczba_dob').value) || 0;
+  const godz = parseInt(document.getElementById('pozostale_godz').value) || 0;
+  const waluta = document.getElementById('waluta_diety').value;
+  let dieta = doby * stawka;
+  if (godz >= 8 && godz < 12) dieta += stawka * 0.5;
+  else if (godz >= 12) dieta += stawka;
+  const sn = document.getElementById('m_sn').checked ? (parseInt(document.getElementById('m_sn_ile').value) || 0) * stawka * 0.15 : 0;
+  const ob = document.getElementById('m_ob').checked ? (parseInt(document.getElementById('m_ob_ile').value) || 0) * stawka * 0.30 : 0;
+  const ko = document.getElementById('m_ko').checked ? (parseInt(document.getElementById('m_ko_ile').value) || 0) * stawka * 0.15 : 0;
+  const net = Math.max(0, dieta - sn - ob - ko);
+  document.getElementById('dieta_total').innerHTML =
+    'Dieta brutto: <strong>' + dieta.toFixed(2) + ' ' + waluta + '</strong> &nbsp;|&nbsp; Potrącenia: ' + (sn + ob + ko).toFixed(2) + ' ' + waluta + ' &nbsp;|&nbsp; <strong>Do wypłaty: ' + net.toFixed(2) + ' ' + waluta + '</strong>';
+}
+
+let noclegi = [];
+function addNocleg() {
+  noclegi.push({ hotel: '', data: '', kwota: '', waluta: 'EUR', rachunek: '' });
+  renderNoclegi();
+}
+function removeNocleg(i) { noclegi.splice(i, 1); renderNoclegi(); }
+function renderNoclegi() {
+  document.getElementById('noclegi_list').innerHTML = noclegi.map((n, i) => `
+    <div class="card">
+      <div class="card-head"><span>Nocleg ${i + 1}</span><button class="remove-btn" onclick="removeNocleg(${i})">×</button></div>
+      <div class="grid2">
+        <div class="field"><label class="lbl">Nazwa hotelu / obiektu</label><input type="text" value="${n.hotel}" oninput="noclegi[${i}].hotel=this.value" placeholder="Hotel Berlin Mitte"></div>
+        <div class="field"><label class="lbl">Data noclegu</label><input type="date" value="${n.data}" oninput="noclegi[${i}].data=this.value"></div>
+        <div class="field"><label class="lbl">Kwota</label><input type="number" value="${n.kwota}" oninput="noclegi[${i}].kwota=this.value" min="0" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label class="lbl">Waluta</label><select oninput="noclegi[${i}].waluta=this.value">${['EUR','USD','GBP','CHF','PLN'].map(v => `<option${v === n.waluta ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
+        <div class="field full"><label class="lbl">Nr rachunku / faktury</label><input type="text" value="${n.rachunek}" oninput="noclegi[${i}].rachunek=this.value" placeholder="FV/2025/..."></div>
+      </div>
+    </div>`).join('');
+}
+renderNoclegi();
+
+let transporty = [];
+function addTransport() {
+  transporty.push({ opis: '', kwota: '', waluta: 'EUR', rachunek: '' });
+  renderTransporty();
+}
+function removeTransport(i) { transporty.splice(i, 1); renderTransporty(); }
+function renderTransporty() {
+  document.getElementById('transport_list').innerHTML = transporty.map((t, i) => `
+    <div class="card">
+      <div class="card-head"><span>Pozycja ${i + 1}</span><button class="remove-btn" onclick="removeTransport(${i})">×</button></div>
+      <div class="grid2">
+        <div class="field full"><label class="lbl">Opis (bilet lotniczy, taxi, metro…)</label><input type="text" value="${t.opis}" oninput="transporty[${i}].opis=this.value" placeholder="Bilet lotniczy WAW–BER"></div>
+        <div class="field"><label class="lbl">Kwota</label><input type="number" value="${t.kwota}" oninput="transporty[${i}].kwota=this.value" min="0" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label class="lbl">Waluta</label><select oninput="transporty[${i}].waluta=this.value">${['EUR','USD','GBP','CHF','PLN'].map(v => `<option${v === t.waluta ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
+        <div class="field full"><label class="lbl">Nr rachunku / biletu</label><input type="text" value="${t.rachunek}" oninput="transporty[${i}].rachunek=this.value" placeholder="nr biletu / FV"></div>
+      </div>
+    </div>`).join('');
+}
+
+function calcKm() {
+  const km = parseFloat(document.getElementById('km_ilosc').value) || 0;
+  const st = parseFloat(document.getElementById('km_stawka').value) || 0;
+  document.getElementById('km_wynik').textContent = 'Ryczałt: ' + (km * st).toFixed(2) + ' PLN';
+}
+
+let inne = [];
+function addInny() {
+  inne.push({ opis: '', kwota: '', waluta: 'EUR', rachunek: '' });
+  renderInne();
+}
+function removeInny(i) { inne.splice(i, 1); renderInne(); }
+function renderInne() {
+  document.getElementById('inne_list').innerHTML = inne.map((n, i) => `
+    <div class="card">
+      <div class="card-head"><span>Wydatek ${i + 1}</span><button class="remove-btn" onclick="removeInny(${i})">×</button></div>
+      <div class="grid2">
+        <div class="field full"><label class="lbl">Opis wydatku</label><input type="text" value="${n.opis}" oninput="inne[${i}].opis=this.value" placeholder="Opłata konferencyjna, wizowe…"></div>
+        <div class="field"><label class="lbl">Kwota</label><input type="number" value="${n.kwota}" oninput="inne[${i}].kwota=this.value" min="0" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label class="lbl">Waluta</label><select oninput="inne[${i}].waluta=this.value">${['EUR','USD','GBP','CHF','PLN'].map(v => `<option${v === n.waluta ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
+        <div class="field full"><label class="lbl">Nr rachunku / dokumentu</label><input type="text" value="${n.rachunek}" oninput="inne[${i}].rachunek=this.value" placeholder="FV / dokument"></div>
+      </div>
+    </div>`).join('');
+}
+renderInne();
+
+function getDietaNetto() {
+  const stawka = parseFloat(document.getElementById('stawka_diety').value) || 0;
+  const doby = parseInt(document.getElementById('liczba_dob').value) || 0;
+  const godz = parseInt(document.getElementById('pozostale_godz').value) || 0;
+  let dieta = doby * stawka;
+  if (godz >= 8 && godz < 12) dieta += stawka * 0.5;
+  else if (godz >= 12) dieta += stawka;
+  const sn = document.getElementById('m_sn').checked ? (parseInt(document.getElementById('m_sn_ile').value) || 0) * stawka * 0.15 : 0;
+  const ob = document.getElementById('m_ob').checked ? (parseInt(document.getElementById('m_ob_ile').value) || 0) * stawka * 0.30 : 0;
+  const ko = document.getElementById('m_ko').checked ? (parseInt(document.getElementById('m_ko_ile').value) || 0) * stawka * 0.15 : 0;
+  const dBrutto = doby * stawka + (godz >= 8 && godz < 12 ? stawka * 0.5 : godz >= 12 ? stawka : 0);
+  return { net: Math.max(0, dieta - sn - ob - ko), brutto: dBrutto, potracenia: sn + ob + ko };
+}
+
+function buildSummary() {
+  const imie = document.getElementById('imie').value || '—';
+  const cel = document.getElementById('cel').value || '—';
+  const miejsce = document.getElementById('miejsce').value || '—';
+  const wyjazd = (document.getElementById('wyjazd').value || '—').replace('T', ' ');
+  const powrot = (document.getElementById('powrot').value || '—').replace('T', ' ');
+  const walutaD = document.getElementById('waluta_diety').value;
+  const d = getDietaNetto();
+  const nocSuma = noclegi.reduce((a, n) => a + (parseFloat(n.kwota) || 0), 0);
+  const nocW = noclegi.length ? noclegi[0].waluta : '—';
+  const transSuma = transporty.reduce((a, t) => a + (parseFloat(t.kwota) || 0), 0);
+  const inneSuma = inne.reduce((a, n) => a + (parseFloat(n.kwota) || 0), 0);
+  const km = parseFloat(document.getElementById('km_ilosc').value) || 0;
+  const kmSt = parseFloat(document.getElementById('km_stawka').value) || 0;
+  const kmTotal = km * kmSt;
+
+  document.getElementById('summary_content').innerHTML = `
+    <div class="sum-wrap">
+      <div class="sum-row"><span>Pracownik</span><span class="val">${imie}</span></div>
+      <div class="sum-row"><span>Cel delegacji</span><span class="val">${cel}</span></div>
+      <div class="sum-row"><span>Kraj / miasto</span><span class="val">${miejsce}</span></div>
+      <div class="sum-row"><span>Wyjazd</span><span class="val">${wyjazd}</span></div>
+      <div class="sum-row"><span>Powrót</span><span class="val">${powrot}</span></div>
+    </div>
+    <div class="sum-wrap">
+      <div class="sum-row"><span>Diety netto</span><span class="val">${d.net.toFixed(2)} ${walutaD}</span></div>
+      <div class="sum-row"><span>Noclegi</span><span class="val">${nocSuma.toFixed(2)} ${nocW}</span></div>
+      <div class="sum-row"><span>Transport</span><span class="val">${transSuma.toFixed(2)}</span></div>
+      <div class="sum-row"><span>Ryczałt km</span><span class="val">${kmTotal.toFixed(2)} PLN</span></div>
+      <div class="sum-row"><span>Inne wydatki</span><span class="val">${inneSuma.toFixed(2)}</span></div>
+    </div>`;
+}
+
+function generatePrint() {
+  const imie = document.getElementById('imie').value || '—';
+  const stanowisko = document.getElementById('stanowisko').value || '—';
+  const nrprac = document.getElementById('nrprac').value || '—';
+  const jednostka = document.getElementById('jednostka').value || '—';
+  const cel = document.getElementById('cel').value || '—';
+  const miejsce = document.getElementById('miejsce').value || '—';
+  const nrpolecenia = document.getElementById('nrpolecenia').value || '—';
+  const transportG = document.getElementById('transport_glowny').value;
+  const wyjazd = (document.getElementById('wyjazd').value || '—').replace('T', ' ');
+  const powrot = (document.getElementById('powrot').value || '—').replace('T', ' ');
+  const stawka = parseFloat(document.getElementById('stawka_diety').value) || 0;
+  const walutaD = document.getElementById('waluta_diety').value;
+  const doby = parseInt(document.getElementById('liczba_dob').value) || 0;
+  const godz = parseInt(document.getElementById('pozostale_godz').value) || 0;
+  const d = getDietaNetto();
+  const km = parseFloat(document.getElementById('km_ilosc').value) || 0;
+  const kmSt = parseFloat(document.getElementById('km_stawka').value) || 0;
+  const kmTotal = km * kmSt;
+  const today = new Date().toLocaleDateString('pl-PL');
+  const nocSuma = noclegi.reduce((a, n) => a + (parseFloat(n.kwota) || 0), 0);
+  const transSuma = transporty.reduce((a, t) => a + (parseFloat(t.kwota) || 0), 0);
+  const inneSuma = inne.reduce((a, n) => a + (parseFloat(n.kwota) || 0), 0);
+
+  const html = `<!DOCTYPE html><html lang="pl"><head><meta charset="UTF-8">
+<title>Rozliczenie delegacji – ${imie}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,Helvetica,sans-serif;font-size:10pt;color:#111;background:#fff;}
+.page{width:210mm;min-height:297mm;margin:0 auto;padding:12mm 18mm;position:relative;}
+h1{font-size:13pt;text-align:center;margin-bottom:3px;font-weight:bold;}
+.sub{text-align:center;font-size:8pt;color:#555;margin-bottom:18px;}
+table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:9.5pt;}
+th,td{border:1px solid #aaa;padding:4px 7px;}
+th{background:#ebebeb;font-weight:bold;text-align:left;}
+.lbl{background:#f5f5f5;font-weight:bold;width:42%;}
+.r{text-align:right;}
+.sh{background:#ddd;font-weight:bold;font-size:9.5pt;padding:5px 7px;border:1px solid #aaa;margin-top:8px;margin-bottom:0;}
+.total td{background:#fffbe6;font-weight:bold;}
+.sign-row{display:flex;justify-content:space-between;margin-top:28px;}
+.sign{text-align:center;width:170px;}
+.sign .line{border-top:1px solid #333;margin-bottom:4px;}
+.sign .cap{font-size:8pt;color:#555;}
+@media print{body{margin:0;}@page{size:A4;margin:0;}}.page{page-break-after:always;}
+</style></head><body><div class="page">
+<h1>ROZLICZENIE KOSZTÓW PODRÓŻY ZAGRANICZNEJ</h1>
+<div class="sub">zgodnie z rozporządzeniem MPiPS z dnia 29 stycznia 2013 r. (Dz.U. 2013 poz. 167)</div>
+<table>
+<tr><td class="lbl">Imię i nazwisko pracownika</td><td>${imie}</td><td class="lbl">Stanowisko</td><td>${stanowisko}</td></tr>
+<tr><td class="lbl">Nr pracownika / ID</td><td>${nrprac}</td><td class="lbl">Jednostka organizacyjna</td><td>${jednostka}</td></tr>
+<tr><td class="lbl">Nr polecenia wyjazdu</td><td>${nrpolecenia}</td><td class="lbl">Data sporządzenia</td><td>${today}</td></tr>
+<tr><td class="lbl">Cel podróży</td><td colspan="3">${cel}</td></tr>
+<tr><td class="lbl">Miejsce delegacji</td><td>${miejsce}</td><td class="lbl">Środek transportu</td><td>${transportG}</td></tr>
+<tr><td class="lbl">Data i godz. wyjazdu z kraju</td><td>${wyjazd}</td><td class="lbl">Data i godz. powrotu do kraju</td><td>${powrot}</td></tr>
+<tr><td class="lbl">Czas trwania delegacji</td><td colspan="3">${doby} dób i ${godz} godz.</td></tr>
+</table>
+<div class="sh">I. DIETY</div>
+<table>
+<tr><th>Stawka dobowa</th><th>Liczba pełnych dób</th><th>Pozostałe godziny</th><th>Dieta brutto</th><th>Potrącenia (posiłki)</th><th>Dieta netto</th></tr>
+<tr><td class="r">${stawka.toFixed(2)} ${walutaD}</td><td class="r">${doby}</td><td class="r">${godz} h</td><td class="r">${d.brutto.toFixed(2)} ${walutaD}</td><td class="r">${d.potracenia.toFixed(2)} ${walutaD}</td><td class="r"><strong>${d.net.toFixed(2)} ${walutaD}</strong></td></tr>
+</table>
+<div class="sh">II. NOCLEGI</div>
+<table>
+<tr><th>Hotel / obiekt</th><th>Data noclegu</th><th>Nr faktury / rachunku</th><th>Kwota</th><th>Waluta</th></tr>
+${noclegi.length ? noclegi.map(n => `<tr><td>${n.hotel}</td><td>${n.data}</td><td>${n.rachunek}</td><td class="r">${parseFloat(n.kwota || 0).toFixed(2)}</td><td>${n.waluta}</td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:#888;font-style:italic;">Brak noclegów</td></tr>'}
+<tr style="background:#f5f5f5;font-weight:bold;"><td colspan="3">RAZEM noclegi</td><td class="r">${nocSuma.toFixed(2)}</td><td>${noclegi.length ? noclegi[0].waluta : '—'}</td></tr>
+</table>
+<div class="sh">III. KOSZTY TRANSPORTU</div>
+<table>
+<tr><th>Opis</th><th>Nr biletu / faktury</th><th>Kwota</th><th>Waluta</th></tr>
+${transporty.length ? transporty.map(t => `<tr><td>${t.opis}</td><td>${t.rachunek}</td><td class="r">${parseFloat(t.kwota || 0).toFixed(2)}</td><td>${t.waluta}</td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:#888;font-style:italic;">Brak pozycji</td></tr>'}
+${km > 0 ? `<tr><td>Ryczałt samochodowy (${km} km × ${kmSt.toFixed(4)} PLN/km)</td><td>—</td><td class="r">${kmTotal.toFixed(2)}</td><td>PLN</td></tr>` : ''}
+<tr style="background:#f5f5f5;font-weight:bold;"><td colspan="2">RAZEM transport</td><td class="r">${(transSuma + kmTotal).toFixed(2)}</td><td>—</td></tr>
+</table>
+<div class="sh">IV. INNE WYDATKI</div>
+<table>
+<tr><th>Opis wydatku</th><th>Nr dokumentu</th><th>Kwota</th><th>Waluta</th></tr>
+${inne.length ? inne.map(n => `<tr><td>${n.opis}</td><td>${n.rachunek}</td><td class="r">${parseFloat(n.kwota || 0).toFixed(2)}</td><td>${n.waluta}</td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:#888;font-style:italic;">Brak wydatków</td></tr>'}
+<tr style="background:#f5f5f5;font-weight:bold;"><td colspan="2">RAZEM inne</td><td class="r">${inneSuma.toFixed(2)}</td><td>—</td></tr>
+</table>
+<div class="sh">V. ZESTAWIENIE I PRZELICZENIE NA PLN</div>
+<table>
+<tr><th>Pozycja</th><th>Kwota w walucie obcej</th><th>Waluta</th><th>Kurs NBP (tabela nr / data)</th><th>Kwota w PLN</th></tr>
+<tr><td>Diety</td><td class="r">${d.net.toFixed(2)}</td><td>${walutaD}</td><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td></tr>
+<tr><td>Noclegi</td><td class="r">${nocSuma.toFixed(2)}</td><td>${noclegi.length ? noclegi[0].waluta : '—'}</td><td></td><td></td></tr>
+<tr><td>Transport</td><td class="r">${transSuma.toFixed(2)}</td><td>—</td><td></td><td></td></tr>
+${km > 0 ? `<tr><td>Ryczałt km</td><td class="r">${kmTotal.toFixed(2)}</td><td>PLN</td><td>1,0000</td><td class="r">${kmTotal.toFixed(2)}</td></tr>` : ''}
+<tr><td>Inne wydatki</td><td class="r">${inneSuma.toFixed(2)}</td><td>—</td><td></td><td></td></tr>
+<tr class="total"><td colspan="4"><strong>ŁĄCZNA KWOTA DO WYPŁATY (PLN)</strong></td><td></td></tr>
+<tr><td colspan="4">Pobrana zaliczka (PLN)</td><td></td></tr>
+<tr><td colspan="4"><strong>Różnica (+ do wypłaty / – do zwrotu) PLN</strong></td><td></td></tr>
+</table>
+<p style="font-size:8pt;color:#666;margin-top:6px;">* Kurs walut wg tabeli NBP nr _____________ z dnia _________________ (dzień roboczy bezpośrednio poprzedzający dzień wypłaty diety)</p>
+<div class="sign-row">
+<div class="sign"><div class="line"></div><div class="cap">Sporządził(a) / Data</div><div style="margin-top:4px;font-size:9pt;">${imie}</div></div>
+<div class="sign"><div class="line"></div><div class="cap">Sprawdził(a) / Data</div></div>
+<div class="sign"><div class="line"></div><div class="cap">Zatwierdził(a) / Data</div></div>
+</div>
+</div></body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 600);
+}
+
+buildProgress();
+</script>
+</body>
+</html>
